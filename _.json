@@ -1,0 +1,69 @@
+[
+  {
+    "orders": [
+      {
+        "order_number": "1002",
+        "items": [
+          {
+            "name": "Cheeseburger",
+            "quantity": 1,
+            "price": 2.49
+          },
+          {
+            "name": "Small Fries",
+            "quantity": 1,
+            "price": 1.49
+          },
+          {
+            "name": "Sprite",
+            "quantity": 2,
+            "price": 1.19
+          }
+        ],
+        "total_price": 6.36
+      },
+      {
+        "order_number": "1003",
+        "items": [
+          {
+            "name": "McChicken",
+            "quantity": 1,
+            "price": 3.99
+          },
+          {
+            "name": "Large Fries",
+            "quantity": 1,
+            "price": 2.19
+          },
+          {
+            "name": "Fanta",
+            "quantity": 3,
+            "price": 1.29
+          }
+        ],
+        "total_price": 9.96
+      },
+      {
+        "order_number": "1004",
+        "items": [
+          {
+            "name": "Filet-O-Fish",
+            "quantity": 2,
+            "price": 4.39
+          },
+          {
+            "name": "Apple Pie",
+            "quantity": 1,
+            "price": 1.29
+          },
+          {
+            "name": "Coca-Cola",
+            "quantity": 1,
+            "price": 1.29
+          }
+        ],
+        "total_price": 10.36
+      }
+    ]
+  }
+]
