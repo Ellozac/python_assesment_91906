@@ -4,6 +4,16 @@ import json
 import os
 from typing import Dict, List, Union
 
+class Order:
+    def __init__(self, order_num, items, total_price):
+        self.order_num = order_num
+        self.items = items
+        self.total_price = total_price
+    
+    @classmethod
+    def from_json(self, json):
+        return Order(json["order_number"], [x for x in json["items"]], json["total_price"])
+
 class OrderManager:
     def __init__(self, file_path: str = "orders.json"):
         self.file_path = file_path
@@ -20,7 +30,7 @@ class OrderManager:
                 data = json.load(file)
                 if data and "orders" in data[0]:
                     for order in data[0]["orders"]:
-                        self.queue.put(order)
+                        self.queue.put(Order.from_json(order))
                     self.reset_json_file()
                     return True
 
@@ -55,11 +65,12 @@ class App:
         if self.orders.remaining_orders():
             order = self.orders.get_next()
             self.clear_window()
-            tk.Label(self.root, text=f"Preparing order {order['order_number']}").pack()
-            for i in order['items']:
-                label = tk.Label(self.root, text=f"{i['name']} x {i['quantity']}")
-                label.pack()
-            tk.Label(self.root, text=f"Total price: ${order['total_price']}").pack()
+            tk.Label(self.root, text=f"Preparing order {order.order_num}").pack()
+            
+            for i in order.items:
+                tk.Label(self.root, text=f"{i['name']} x {i['quantity']}").pack()
+
+            tk.Label(self.root, text=f"Total price: ${order.total_price}").pack()
             tk.Button(self.root, text="Complete", command=self.main).pack(pady=5)
             tk.Button(self.root, text='Skip', command=lambda: self.skip_order(order)).pack(pady=5)
         else:
