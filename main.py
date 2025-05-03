@@ -2,51 +2,58 @@ import tkinter as tk
 import queue
 import json
 import os
+from typing import Dict, List, Union
 
-class QueueManager(queue.Queue):
-    def __init__(self, file_path="orders.json"):
-        super().__init__()
+class OrderManager:
+    def __init__(self, file_path: str = "orders.json"):
         self.file_path = file_path
-        self.json_to_queue()
+        self.queue = queue.Queue()
+        self.load_orders()
 
-    def json_to_queue(self) -> bool:
+    def load_orders(self) -> bool:
         if not os.path.exists(self.file_path):
             self.reset_json_file()
             return False
 
-        with open(self.file_path, 'r')as file:
+        with open(self.file_path, 'r') as file:
             try:
                 data = json.load(file)
                 if data and "orders" in data[0]:
                     for order in data[0]["orders"]:
-                        self.put(order)
+                        self.queue.put(order)
                     self.reset_json_file()
                     return True
-                    
+
             except json.JSONDecodeError:
-                print("Invalid Json. resetting file.")
+                print("Invalid JSON. Resetting file.")
                 self.reset_json_file()
         return False
 
-    def reset_json_file(self):
+    def reset_json_file(self) -> None:
         with open(self.file_path, 'w') as file:
             json.dump([], file)
 
+    def remaining_orders(self) -> int:
+        return self.queue.qsize()
 
-    def remaining_orders(self):
-        return self.qsize()
+    def get_next(self) -> Dict[str, Union[str, List[Dict[str, Union[str, int, float]]], float]] | None:
+        if not self.queue.empty():
+            return self.queue.get()
+        return None
 
+    def skip_order(self, order):
+        self.queue.put(order)
 
 class App:
-    def __init__(self, root):
+    def __init__(self, root: tk.Tk):
         self.root = root
         self.root.title("Order to Prepare") 
-        self.orders = QueueManager()
+        self.orders = OrderManager()
         self.main()
     
     def main(self):
         if self.orders.remaining_orders():
-            order = self.orders.get()
+            order = self.orders.get_next()
             self.clear_window()
             tk.Label(self.root, text=f"Preparing order {order['order_number']}").pack()
             for i in order['items']:
@@ -55,19 +62,19 @@ class App:
             tk.Label(self.root, text=f"Total price: ${order['total_price']}").pack()
             tk.Button(self.root, text="Complete", command=self.main).pack(pady=5)
             tk.Button(self.root, text='Skip', command=lambda: self.skip_order(order)).pack(pady=5)
-
         else:
             self.clear_window()
             x = tk.Label(self.root, text="There are currently no orders.")
             x.pack()
             self.root.after(1000, self.check_for_orders)
 
-    def skip_order(self, order):
-        self.orders.put(order)
+    
+    def skip_order(self, order: Dict[str, Union[str, List[Dict[str, Union[str, int, float]]], float]]):
+        self.orders.skip_order(order)
         self.main()
-
+    
     def check_for_orders(self):
-        if self.orders.json_to_queue():
+        if self.orders.load_orders():
             self.main()
 
         else:
