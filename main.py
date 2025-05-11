@@ -1,9 +1,10 @@
 import tkinter as tk
+from tkinter import messagebox
 import queue
 import json
 import os
-from typing import Dict, List, Union
-
+from typing import Dict, List, Union, Self
+from pathlib import Path
 class Order:
     def __init__(self, order_num, items, total_price):
         self.order_num = order_num
@@ -11,15 +12,14 @@ class Order:
         self.total_price = total_price
     
     @classmethod
-    def from_json(self, json):
-        return Order(json["order_number"], [x for x in json["items"]], json["total_price"])
+    def from_json(cls, json) -> Self:
+        return cls(json["order_number"], [x for x in json["items"]], json["total_price"])
 
 class OrderManager:
-    def __init__(self, file_path: str = "orders.json"):
+    def __init__(self, file_path: str = "./data/orders.json"):
         self.file_path = file_path
         self.queue = queue.Queue()
         self.load_orders()
-
     def load_orders(self) -> bool:
         if not os.path.exists(self.file_path):
             self.reset_json_file()
@@ -29,14 +29,16 @@ class OrderManager:
             try:
                 data = json.load(file)
                 if data and "orders" in data[0]:
-                    for order in data[0]["orders"]:
-                        self.queue.put(Order.from_json(order))
-                    self.reset_json_file()
-                    return True
+                    if len(data[0]) > 0:
+                        for order in data[0]["orders"]:
+                            self.queue.put(Order.from_json(order))
+                        self.reset_json_file()
+                        return True
+                    else:
+                        return False
 
             except json.JSONDecodeError:
-                print("Invalid JSON. Resetting file.")
-                self.reset_json_file()
+                raise ValueError(f"Invalid JSON. {self.file_path}")
         return False
 
     def reset_json_file(self) -> None:
@@ -46,7 +48,7 @@ class OrderManager:
     def remaining_orders(self) -> int:
         return self.queue.qsize()
 
-    def get_next(self) -> Dict[str, Union[str, List[Dict[str, Union[str, int, float]]], float]] | None:
+    def get_next(self) -> Order | None:
         if not self.queue.empty():
             return self.queue.get()
         return None
@@ -55,10 +57,20 @@ class OrderManager:
         self.queue.put(order)
 
 class App:
-    def __init__(self, root: tk.Tk):
+    def __init__(self, root: tk.Tk, file_path="./data/orders.json"):
         self.root = root
-        self.root.title("Order to Prepare") 
-        self.orders = OrderManager()
+        self.root.title("Order to Prepare")
+        try: 
+            self.orders = OrderManager()
+        except FileNotFoundError:
+            if tk.messagebox.askyesno(title=f"{file_path} Not Found", message="File not found. Create it?"):
+                os.mkdir(Path(file_path).parent)
+                with open(file_path, "w") as file:
+                    file.write("[]")
+                self.orders = OrderManager()
+            else:
+                exit(1)
+
         self.main()
     
     def main(self):
@@ -74,13 +86,10 @@ class App:
             tk.Button(self.root, text="Complete", command=self.main).pack(pady=5)
             tk.Button(self.root, text='Skip', command=lambda: self.skip_order(order)).pack(pady=5)
         else:
-            self.clear_window()
-            x = tk.Label(self.root, text="There are currently no orders.")
-            x.pack()
-            self.root.after(1000, self.check_for_orders)
+            self.check_for_orders()
 
     
-    def skip_order(self, order: Dict[str, Union[str, List[Dict[str, Union[str, int, float]]], float]]):
+    def skip_order(self, order: Order):
         self.orders.skip_order(order)
         self.main()
     
@@ -89,6 +98,9 @@ class App:
             self.main()
 
         else:
+            self.clear_window()
+            no_order_label = tk.Label(self.root, text="There are currently no orders.")
+            no_order_label.pack()
             self.root.after(1000, self.check_for_orders)
 
     def clear_window(self):
