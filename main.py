@@ -24,7 +24,7 @@ class OrderManager:
         if not os.path.exists(self.file_path):
             self.reset_json_file()
             return False
-
+        
         with open(self.file_path, 'r') as file:
             try:
                 data = json.load(file)
@@ -35,9 +35,14 @@ class OrderManager:
                     return True
                 else:
                     return False
-
-            except json.JSONDecodeError:
-                raise ValueError(f"Invalid JSON. {self.file_path}")
+            except ValueError:
+                tk.messagebox.showerror(title="Error Invalid Json",message=f"Invalid JSON. {self.file_path}")
+                if tk.messagebox.askyesno(title="Regenerate file?", message="Would you like to reset the file?"):
+                    self.reset_json_file()
+                else:
+                    exit(1)
+            except KeyError:
+                self.reset_json_file()
         return False
 
     def reset_json_file(self) -> None:
