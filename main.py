@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import messagebox
+from tkinter import simpledialog
 import queue
 import json
 import os
@@ -28,14 +29,13 @@ class OrderManager:
         with open(self.file_path, 'r') as file:
             try:
                 data = json.load(file)
-                if data and "orders" in data[0]:
-                    if len(data[0]) > 0:
-                        for order in data[0]["orders"]:
-                            self.queue.put(Order.from_json(order))
-                        self.reset_json_file()
-                        return True
-                    else:
-                        return False
+                if data and len(data[0]["orders"]) > 0:
+                    for order in data[0]["orders"]:
+                        self.queue.put(Order.from_json(order))
+                    self.reset_json_file()
+                    return True
+                else:
+                    return False
 
             except json.JSONDecodeError:
                 raise ValueError(f"Invalid JSON. {self.file_path}")
@@ -43,7 +43,7 @@ class OrderManager:
 
     def reset_json_file(self) -> None:
         with open(self.file_path, 'w') as file:
-            json.dump([], file)
+            json.dump([{"orders": []}], file)
 
     def remaining_orders(self) -> int:
         return self.queue.qsize()
@@ -61,18 +61,26 @@ class App:
         self.root = root
         self.root.title("Order to Prepare")
         try: 
-            self.orders = OrderManager()
+            self.orders = OrderManager(file_path)
         except FileNotFoundError:
             if tk.messagebox.askyesno(title=f"{file_path} Not Found", message="File not found. Create it?"):
                 os.mkdir(Path(file_path).parent)
                 with open(file_path, "w") as file:
                     file.write("[]")
-                self.orders = OrderManager()
+                self.orders = OrderManager(file_path)
             else:
                 exit(1)
-
+        self.check_manager()
         self.main()
-    
+    def check_manager(self):
+        ans = simpledialog.askstring("robot check", "whats 9 + 10")
+        while not ans.isdigit():
+            messagebox.showerror("Error", "Please only type numbers.")
+            ans = simpledialog.askstring("robot check", "whats 9 + 10")
+        if not int(ans) == 19:
+            messagebox.showerror("Wrong Answer", "AI DETECTED!!!!. program closing.")
+            exit(1)
+        
     def main(self):
         if self.orders.remaining_orders():
             order = self.orders.get_next()
