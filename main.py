@@ -5,7 +5,6 @@ import queue
 import json
 import os
 from typing import Dict, List, Union, Self
-from pathlib import Path
 class Order:
     def __init__(self, order_num, items, total_price):
         self.order_num = order_num
